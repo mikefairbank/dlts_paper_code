@@ -15,19 +15,25 @@ The purpose of the code is to archive the experiments performed in the above pap
 
 ## Running the code
 
-- There are three runnable python scripts in this repository.  
+- There are four runnable python scripts in this repository.  
 
 - See the leading comments in each script for usage examples.
 
 
 ## Dependencies
 
-All were built using tensorflow v.1.15 but should be compatible with Tensorflow versions 2.x.
+All were built using tensorflow v.1.15, but should be compatible with Tensorflow versions 2.x.
 
 Also used :
+
+- Python 3.8
 
 - numpy version 1.17, 
 
 - pandas version 1.0.3 
 
+## Two-Spirals result
 
+When running the two spirals script, with the --graphical argument, we should see a result compatible with this figure from the paper:
+
+![Two-Spirals image](spirals_image.jpg)

@@ -1,5 +1,5 @@
 # This code is to accompany paper "Deep Learning in Target Space", M. Fairbank, S. Samothrakis, L.Citi, arXiv:2006.01578 
-# This example code uses TF1 code, without using keras layers, to replicate the imdb RNN experiment from the paper.  
+# This example code uses TF1 code, to replicate the bit-sequence memorisation and addition RNN experiments from the paper.  
 # Please cite the above paper if this code or future variants of it are used in future academic work.
 
 # Note that this LSTM implementation is different from the one used in the paper's experiments.  The paper used a standard 
