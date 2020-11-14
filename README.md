@@ -36,4 +36,4 @@ Also used :
 
 When running the two spirals script, with the --graphical argument, we should see a result compatible with this figure from the paper:
 
-![Two-Spirals image](spirals_image.jpg)
+![Two-Spirals image](spirals_image.png)
