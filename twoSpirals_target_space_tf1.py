@@ -232,7 +232,7 @@ if graphical:
 
 cumul_cpu_time=0
 start_time = time.time()
-print("targets,use_adam,learning_rate,mbs,pseudoinverse_regularisation_constant,iter,epoch,lossv,accuracy,cumul_cpu_time,af,num_hids_per_layer, realisation_mode,test_loss,test_accuracy,initialiser,batch_normalisation,do_initial_targets_projection")
+print("targets,use_adam,learning_rate,mbs,pseudoinverse_regularisation_constant,iter,epoch,train_loss,train_accuracy,cumul_cpu_time,af,num_hids_per_layer, realisation_mode,test_loss,test_accuracy,initialiser,batch_normalisation,do_initial_targets_projection")
 for iteration in range(max_its):
     batch_inputs, batch_targets=next_batch(mini_batch_size, train_inputs, train_outputs)
     feed_dict_mini_batch={input_realisation_network: train_inputs, input_error_calculation_network: batch_inputs, target_labels: batch_targets, is_train: True}
