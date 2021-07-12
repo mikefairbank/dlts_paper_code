@@ -321,7 +321,7 @@ if do_initial_targets_projection:
 
 cumul_cpu_time=0
 start_time = time.time()
-print("targets,use_adam,learning_rate,pseudoinverse_regularisation_constant,iter,epoch,train_,lossv,accuracy,cumul_cpu_time,af, realisation_mode,test_,test_loss,test_accuracy,xor,delay_length,sequence_length,batch_size,use_lstm,rbs,mbs,rsl,adder,targets_uses_initial_projection,targets_initialiser")
+print("targets,use_adam,learning_rate,pseudoinverse_regularisation_constant,iter,epoch,train_,train_loss,train_accuracy,cumul_cpu_time,af,realisation_mode,test_,test_loss,test_accuracy,xor,delay_length,sequence_length,batch_size,use_lstm,rbs,mbs,rsl,adder,targets_uses_initial_projection,targets_initialiser")
 
 dict_recent_inputs={}
 for i in range(max_its):
