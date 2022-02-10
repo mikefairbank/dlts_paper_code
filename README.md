@@ -1,17 +1,17 @@
 # dlts_paper_code
 
 
-This code is to accompany the paper "Deep Learning in Target Space." Fairbank, Michael, Spyridon Samothrakis, and Luca Citi. Journal of Machine Learning Research 23.8 (2022): 1-46.   Also published as arXiv:2006.01578.
+This code is to accompany the paper ["Deep Learning in Target Space."](https://jmlr.org/papers/v23/20-040.html) Fairbank, Michael, Spyridon Samothrakis, and Luca Citi. Journal of Machine Learning Research 23.8 (2022): 1-46.   Also published as [arXiv:2006.01578](https://arxiv.org/abs/2006.01578).
 
 Please cite the above paper if this code or future variants of it are used in future academic work.  Also, we welcome contact from anyone who's found this code or method useful.
 
 ### Purpose
 
-The purpose of the code is to archive the experiments performed in the above paper, and to make those results replicable.  
+This is an under-development set of keras layers to implement the target-space method.
 
-- This code is not the most flexible for future projects.  
+- Patches are welcome
 
-- We are developing a future version of this code which should be much easier to use - using bespoke keras layers.  Will add a link here when ready.
+- For the actual code used in the experiments in the paper, please see the sub folder "TF1 version", which should still work under TF2 using the built-in TF2 backwards compatibility.
 
 ## Running the code
 
@@ -22,7 +22,7 @@ The purpose of the code is to archive the experiments performed in the above pap
 
 ## Dependencies
 
-All were built using tensorflow v.1.15, but should be compatible with Tensorflow versions 2.x.
+All were built using tensorflow v.2.x
 
 Also used :
 
