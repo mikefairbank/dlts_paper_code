@@ -16,11 +16,12 @@ This is an under-development set of keras layers to implement the target-space m
 ## Running the code
 
 - There are four runnable python scripts in this repository:
-        1. One fully-connected (dense) layered neural network example: [twoSpirals_target_space.py](./twoSpirals_target_space.py)
+
+    - One fully-connected (dense) layered neural network example: [twoSpirals_target_space.py](./twoSpirals_target_space.py)
         
-        2. Two RNN examples: [rnn_bit_adder_target_space.py](./rnn_bit_adder_target_space.py) and [rnn_imdb_target_space.py](./rnn_imdb_target_space.py)
+    - Two RNN examples: [rnn_bit_adder_target_space.py](./rnn_bit_adder_target_space.py) and [rnn_imdb_target_space.py](./rnn_imdb_target_space.py)
         
-        3. One CNN example: [cnn_target_space.py](./cnn_target_space.py)
+    - One CNN example: [cnn_target_space.py](./cnn_target_space.py)
 
     - See the leading comments in each script for usage examples.
 
@@ -32,13 +33,13 @@ This is an under-development set of keras layers to implement the target-space m
 
 ## Dependencies
 
-All were built using tensorflow v.2.x
+All were built using tensorflow v.2.7
 
 Also used :
 
 - Python 3.8
 
-- numpy version 1.17, 
+- numpy version 1.17 
 
 - pandas version 1.0.3 
 
