@@ -1,7 +1,7 @@
 # dlts_paper_code
 
 
-This code is to accompany the paper ["Deep Learning in Target Space."](https://jmlr.org/papers/v23/20-040.html) Fairbank, Michael, Spyridon Samothrakis, and Luca Citi. Journal of Machine Learning Research 23.8 (2022): 1-46.   Also published as [arXiv:2006.01578](https://arxiv.org/abs/2006.01578).
+This code is to accompany the paper ["Deep Learning in Target Space."](https://jmlr.org/papers/v23/20-040.html) Michael Fairbank, Spyridon Samothrakis, and Luca Citi. Journal of Machine Learning Research 23.8 (2022): 1-46.   Also published as [arXiv:2006.01578](https://arxiv.org/abs/2006.01578).
 
 Please cite the above paper if this code or future variants of it are used in future academic work.  Also, we welcome contact from anyone who's found this code or method useful.
 
