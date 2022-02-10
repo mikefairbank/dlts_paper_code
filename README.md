@@ -15,9 +15,14 @@ This is an under-development set of keras layers to implement the target-space m
 
 ## Running the code
 
-- There are four runnable python scripts in this repository.  
+- There are four runnable python scripts in this repository.
 
-- See the leading comments in each script for usage examples.
+    - See the leading comments in each script for usage examples.
+
+- The file ts_layers.py contains the main target-space program logic, including specific Keras layers for: 
+
+    - CNN layers ("TSConv2D"), Dense Layer ("TSDense"), and RNN layer ("TSRNNDense")
+
 
 
 ## Dependencies
