@@ -35,7 +35,7 @@ To see how to use these target-space layers, see the four example python scripts
 
 However to understand these futher, a key concept is that once a Target Space "layer" (e.g. TSDense) is constructed,  its call method inputs and outputs TWO tensors (unlike Keras.Layers.Dense which only inputs and outputs only ONE tensor).  
 
-The first two of these two tensors inputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $ \overline{X} $ (described in the paper on page 9 and section 3.1).  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first ouput tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
+The first two of these two tensors inputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1).  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first ouput tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
 
 ```
 class TSModel(keras.Model):
@@ -52,13 +52,13 @@ class TSModel(keras.Model):
         return x
 ```
 
-Note that in this example, we have to define a subclass from keras.Model, and override the model's "call" method (as above).  So we have to not only use TSLayers, but also use them in a bespoke Model.  (There is no Keras "Functional API" or "Sequential" method currently available for using these keras target-space layers.  It's a pretty unusual demand we are placing on Keras layers here, so it requires fully overriding the Keras TSModel to achieve what we want).
+Note that in this example, we have to define a subclass from keras.Model, and override the model's "call" method (as above).  So we have to not only use TSLayers, but also use them in a bespoke Model.  (There is no Keras "Functional API" or "Sequential" method currently available for using these keras target-space layers.  It's a pretty unusual demand we are placing on Keras layers here, so it requires fully overriding Keras.Model to achieve what we want).
 
 The above code snippet allows you to mix TSLayers with ordinary Keras.Layers.  For example we might want a TSConv2D layer followed by an ordinary Flatten layer, or ordinary MaxPool layer; so the above "if isinstance" statement allows that to happen.  
 
 In the above code self.fixed_targets_input_matrix plays the role of $\overline{X}$ from the paper, and then x_targets holds this quantity as it propagates through the layers of the network.  
 
-The second input matrix, originates as "x=inputs" and also propagates through the network.  This represents the shuffled minibatch of data passing through the network.  It is this output matrix from the neural network that we care about and which would go into our training loss function.  
+The second input matrix going into each TSLayer, originates as "x=inputs" and also propagates through the network.  This represents the shuffled minibatch of data passing through the network.  It is this output matrix from the neural network that we care about and which would go into our training loss function.  
 
 
 ### Understanding ts_layers.py
