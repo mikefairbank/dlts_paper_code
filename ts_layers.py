@@ -1,9 +1,14 @@
 # This code is to accompany the paper "Deep Learning in Target Space", M. Fairbank, S. Samothrakis, L. Citi, https://jmlr.org/papers/v23/20-040.html
 # Please cite the above paper if this code or future variants of it are used in future academic work.
 # Pull requests to improve or tidy this code up are welcome
+# TODO fix the get_config functions for each class.
+# TODO: Try and get InputSpec set up correctly so that it validates 2 input tensors are used.
+
+
+import numpy as np
+import tensorflow as tf
 
 from tensorflow.python.keras.engine.base_layer import Layer
-import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.python.keras import activations
@@ -17,37 +22,20 @@ from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
-
-
 from tensorflow.python.eager import context
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.keras import activations
 from tensorflow.python.keras import backend
-from tensorflow.python.keras import constraints
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras.engine.base_layer import Layer
-from tensorflow.python.keras.engine.input_spec import InputSpec
-# imports for backwards namespace compatibility
-# pylint: disable=unused-import
-from tensorflow.python.keras.layers.pooling import AveragePooling1D
-from tensorflow.python.keras.layers.pooling import AveragePooling2D
-from tensorflow.python.keras.layers.pooling import AveragePooling3D
-from tensorflow.python.keras.layers.pooling import MaxPooling1D
-from tensorflow.python.keras.layers.pooling import MaxPooling2D
-from tensorflow.python.keras.layers.pooling import MaxPooling3D
-# pylint: enable=unused-import
 from tensorflow.python.keras.utils import conv_utils
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.util.tf_export import keras_export
-import tensorflow as tf
-import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import constant_op
 from tensorflow.linalg import lstsq 
+#from keras.engine import input_spec
 
 class TSLayer(Layer):
     def __init__(self,
@@ -69,45 +57,28 @@ class TSDense(TSLayer):
     This code is (badly) modified from the Keras Dense implementation, and may 
     need further modifications to conform to keras standards.
     M. Fairbank 2020-06-03
-    
+    M. Fairbank 2022-02-11
     ```
     Arguments:
-        units: Positive integer, dimensionality of the output space.
-        target_input_matrix:  The activations corresponding to a fixed 
-            representitive sample of the training input vectors.  
-            See target-space paper section 3.1 for details.  If this is not the 
-            first layer of the network, then it must be link to the previous 
-            layer's calculate_target_output_matrix() function.
-        activation: Activation function to use.
-            If you don't specify anything, no activation is applied
-            (ie. "linear" activation: `a(x) = x`).
+        units, activation, use_bias: See keras.Dense for details
+        realisation_batch_size: The fixed batch size (number of rows) in target_input_matrix (\bar{X})
         pseudoinverse_l2_regularisation: The amount of L2 regularisation 
             to use in the least-squares solution.  See target-space paper 
             section 3.2. If in doubt, leave as default value 0.1
-        shortcuts: If True, then appends inputs to outputs simulating shortcut
-            weights from previous layer to next layer.
         use_scu_algorithm: Switches on preferred target-space algorithm, 
             sequential cascade correction (SCU).  Alternative is OCU algorithm.
             See target-space paper section 2.4 for details.
-        use_bias: Boolean, whether the layer uses a bias vector.
         kernel_initializer: Initializer for the targets matrix.  Defaults to stddev=1.
         initialise_with_projection:  Boolean (default True) to say if the 
             target matrices are further initialised by projecting them onto the 
             initial layer outputs. This is tentatively recommened behaviour.
-        kernel_regularizer: Regularizer function applied to
-            the `kernel` weights matrix.
-        activity_regularizer: Regularizer function applied to
-            the output of the layer (its "activation")..
-        kernel_constraint: Constraint function applied to
-            the `kernel` weights matrix.
     Input shape:
-        N-D tensor with shape: `(batch_size, ..., input_dim)`.
-        The most common situation would be
-        a 2D input with shape `(batch_size, input_dim)`.
+        Takes TWO input matrices, \bar(X) and X (see paper for details).
+        Xbar is the target_input_matrix - a fixed minibatch that is meant to be representative of the training set somehow.
+        X is the mini-batch input matrix.
+        The most common situation would be a 2D input with shape `(batch_size, input_dim)`.
     Output shape:
-        N-D tensor with shape: `(batch_size, ..., units)`.
-        For instance, for a 2D input with shape `(batch_size, input_dim)`,
-        the output would have shape `(batch_size, units)`.
+        Outputs 2 output matrices, target_output_matrix and output_matrix.  
     """
 
     def __init__(self,
@@ -145,6 +116,7 @@ class TSDense(TSLayer):
         self.use_bias = use_bias
         self.supports_masking = True
         self.input_spec = InputSpec(min_ndim=2)
+        #self.input_spec = (InputSpec(shape=(realisation_batch_size,None)),InputSpec(min_ndim=2)) #TODO I suspect we should be using InputSpec properly to validate the inputs to each layer.  There are two inputs to each layer required!
         self.use_scu_algorithm=use_scu_algorithm
                 
     def calculate_internal_weight_matrix(self,target_input_matrix):
@@ -190,6 +162,8 @@ class TSDense(TSLayer):
     
 
     def call(self, target_input_matrix, inputs0):
+        #tf.print("input_spec.assert_input_compatibility",self.input_spec)
+        #input_spec.assert_input_compatibility(self.input_spec, [target_input_matrix, inputs0], self.name)
         internal_weight_matrix=self.calculate_internal_weight_matrix(target_input_matrix)
         if self.use_scu_algorithm:
             # SCU (sequential cascade untangling) algorithm, defined in target-space paper Section 2.4, Algorithm 3.
@@ -206,7 +180,7 @@ class TSDense(TSLayer):
         return [target_outputs, main_output_matrix]
     
     def propagate_layer(self, inputs, internal_weight_matrix, apply_activation=True):
-        if isinstance(self.realisation_batch_size, list):
+        if isinstance(self.realisation_batch_size, list): 
             rank=len(self.realisation_batch_size)+1
         else:
             rank=2
@@ -238,7 +212,7 @@ class TSDense(TSLayer):
         return input_shape[:-1].concatenate(self.units)
 
     def get_config(self):
-        # TODO this function is copied from keras Dense, and probably needs some further changes for TSDense...?
+        # TODO this function is copied from Keras.Layers.Dense, and probably needs some further changes for TSDense...?
         config = {
                 'units': self.units,
                 'activation': activations.serialize(self.activation),
@@ -254,8 +228,33 @@ class TSDense(TSLayer):
         
         
 class TSConv2D(TSLayer):
-    # Copied and modifed from Keras.Conv2D layer.  Some code needs tidying up as a result
-    """Abstract N-D convolution layer (private, used as implementation base).
+    """ Copied and modifed from Keras.Conv2D layer.  Some code needs tidying up as a result
+    This code is to accompany paper https://jmlr.org/papers/v23/20-040.html
+    Please cite the above paper if this code or future variants of it are used in future academic work.
+    
+    This code is (badly) modified from the Keras Conv2D implementation, and may 
+    need further modifications to conform to Keras standards.
+    M. Fairbank 2020-06-03
+    M. Fairbank 2022-02-11
+    
+    Arguments:
+        activation, use_bias,filters, kernel_size, strides, padding, data_format,dilation_rate: See Keras.Conv2D
+        realisation_batch_size: The fixed batch size (number of rows) in target_input_matrix (\bar{X})
+        pseudoinverse_l2_regularisation: The amount of L2 regularisation 
+            to use in the least-squares solution.  See target-space paper 
+            section 3.2. If in doubt, leave as default value 0.1
+        use_scu_algorithm: Switches on preferred target-space algorithm, 
+            sequential cascade correction (SCU).  Alternative is OCU algorithm.
+            See target-space paper section 2.4 for details.
+        kernel_initializer: Initializer for the targets matrix.  Defaults to stddev=1.
+
+    Input shape:
+        Takes TWO input matrices, \bar(X) and X (see paper for details).
+        Xbar is the target_input_matrix - a fixed minibatch that is meant to be representative of the training set somehow.
+        X is the mini-batch input matrix.
+        The most common situation would be a 2D input with shape `(batch_size, input_dim)`.
+    Output shape:
+        Outputs 2 output matrices, target_output_matrix and output_matrix.  
 
     This layer creates a convolution kernel that is convolved
     (actually cross-correlated) with the layer input to produce a tensor of
@@ -263,49 +262,6 @@ class TSConv2D(TSLayer):
     a bias vector is created and added to the outputs. Finally, if
     `activation` is not `None`, it is applied to the outputs as well.
 
-    Note: layer attributes cannot be modified after the layer has been called
-    once (except the `trainable` attribute).
-
-    Arguments:
-        rank: An integer, the rank of the convolution, e.g. "2" for 2D convolution.
-        filters: Integer, the dimensionality of the output space (i.e. the number
-            of filters in the convolution).
-        kernel_size: An integer or tuple/list of n integers, specifying the
-            length of the convolution window.
-        strides: An integer or tuple/list of n integers,
-            specifying the stride length of the convolution.
-            Specifying any stride value != 1 is incompatible with specifying
-            any `dilation_rate` value != 1.
-        padding: One of `"valid"`,    `"same"`, or `"causal"` (case-insensitive).
-        data_format: A string, one of `channels_last` (default) or `channels_first`.
-            The ordering of the dimensions in the inputs.
-            `channels_last` corresponds to inputs with shape
-            `(batch_size, ..., channels)` while `channels_first` corresponds to
-            inputs with shape `(batch_size, channels, ...)`.
-        dilation_rate: An integer or tuple/list of n integers, specifying
-            the dilation rate to use for dilated convolution.
-            Currently, specifying any `dilation_rate` value != 1 is
-            incompatible with specifying any `strides` value != 1.
-        activation: Activation function to use.
-            If you don't specify anything, no activation is applied.
-        use_bias: Boolean, whether the layer uses a bias.
-        kernel_initializer: An initializer for the convolution kernel.
-        bias_initializer: An initializer for the bias vector. If None, the default
-            initializer will be used.
-        kernel_regularizer: Optional regularizer for the convolution kernel.
-        bias_regularizer: Optional regularizer for the bias vector.
-        activity_regularizer: Optional regularizer function for the output.
-        kernel_constraint: Optional projection function to be applied to the
-                kernel after being updated by an `Optimizer` (e.g. used to implement
-                norm constraints or value constraints for layer weights). The function
-                must take as input the unprojected variable and must return the
-                projected variable (which must have the same shape). Constraints are
-                not safe to use when doing asynchronous distributed training.
-        bias_constraint: Optional projection function to be applied to the
-                bias after being updated by an `Optimizer`.
-        trainable: Boolean, if `True` the weights of this layer will be marked as
-            trainable (and listed in `layer.trainable_weights`).
-        name: A string, the name of the layer.
     """
 
     def __init__(self, 
@@ -367,8 +323,6 @@ class TSConv2D(TSLayer):
         input_shape = tensor_shape.TensorShape(input_shape)
         input_channel = self._get_input_channel(input_shape)
         kernel_shape = self.kernel_size + (input_channel, self.filters)
-        #print("kernel_shape",kernel_shape, kernel.shape,type(kernel_shape),type(kernel.shape))#(3,3,1,6)
-        #sys.exit(0)
         channel_axis = self._get_channel_axis()
         self.input_spec = InputSpec(ndim=self.rank + 2,
                         axes={channel_axis: input_channel})
@@ -473,6 +427,7 @@ class TSConv2D(TSLayer):
         return [b,W]
 
     def compute_output_shape(self, input_shape):
+        # TODO check this function for target-space
         input_shape = tensor_shape.TensorShape(input_shape).as_list()
         if self.data_format == 'channels_last':
             space = input_shape[1:-1]
@@ -502,6 +457,7 @@ class TSConv2D(TSLayer):
                                                                             new_space)
 
     def get_config(self):
+        # TODO fix this function for target-space
         config = {
                 'filters': self.filters,
                 'kernel_size': self.kernel_size,
@@ -578,51 +534,41 @@ class TSConv2D(TSLayer):
 
 class TSRNNDense(TSLayer):
     """A Target-space variety of the Keras Dense Layer.
-    This code is to accompany "Deep Learning in Target Space", M. Fairbank + S. Samothrakis, arXiv:2006.01578
+    This code is to accompany paper https://jmlr.org/papers/v23/20-040.html
     Please cite the above paper if this code or future variants of it are used in future academic work.
     
-    This code is (badly) modified from the Keras Dense implementation, and may 
+    This code is (badly) modified from the a Keras RNN/Dense implementation, and may 
     need further modifications to conform to keras standards.
-    M. Fairbank 2020-06-03
+       M. Fairbank 2020-06-03
+    M. Fairbank 2022-02-11
     
-    ```
     Arguments:
-        units: Positive integer, dimensionality of the output space.
+        activation, use_bias, units, return_sequences: See Keras.SimpleRNN
+        realisation_batch_size: The fixed batch size (size of shape[0]) of target_input_matrix (\bar{X})
+        realisation_seq_length: The time-sequence length (size of shape[1]) of target_input_matrix (\bar{X})
+        seq_length: The time-sequence length (size of shape[1]) of the mini-batch (X)
+        pseudoinverse_l2_regularisation: The amount of L2 regularisation 
+            to use in the least-squares solution.  See target-space paper 
+            section 3.2. If in doubt, leave as default value 0.1
+        use_scu_algorithm: Switches on preferred target-space algorithm, 
+            sequential cascade correction (SCU).  Alternative is OCU algorithm.
+            See target-space paper section 2.4 for details.
+        kernel_initializer: Initializer for the targets matrix.  Defaults to stddev=1.
+ 
         target_input_matrix:  The activations corresponding to a fixed 
             representitive sample of the training input vectors.  
             See target-space paper section 3.1 for details.  If this is not the 
             first layer of the network, then it must be link to the previous 
             layer's calculate_target_output_matrix() function.
-        activation: Activation function to use.
-            If you don't specify anything, no activation is applied
-            (ie. "linear" activation: `a(x) = x`).
-        pseudoinverse_l2_regularisation: The amount of L2 regularisation 
-            to use in the least-squares solution.  See target-space paper 
-            section 3.2. If in doubt, leave as default value 0.1
-        shortcuts: If True, then appends inputs to outputs simulating shortcut
-            weights from previous layer to next layer.
-        use_scu_algorithm: Switches on preferred target-space algorithm, 
-            sequential cascade correction (SCU).  Alternative is OCU algorithm.
-            See target-space paper section 2.4 for details.
-        use_bias: Boolean, whether the layer uses a bias vector.
         kernel_initializer: Initializer for the targets matrix.  Defaults to stddev=1.
         initialise_with_projection:  Boolean (default True) to say if the 
             target matrices are further initialised by projecting them onto the 
             initial layer outputs. This is tentatively recommened behaviour.
-        kernel_regularizer: Regularizer function applied to
-            the `kernel` weights matrix.
-        activity_regularizer: Regularizer function applied to
-            the output of the layer (its "activation")..
-        kernel_constraint: Constraint function applied to
-            the `kernel` weights matrix.
     Input shape:
-        N-D tensor with shape: `(batch_size, ..., input_dim)`.
-        The most common situation would be
-        a 2D input with shape `(batch_size, input_dim)`.
+        Two 3D tensor with shapes: `(realisation_batch_size, reaslisation_seq_length, input_dim)`, `(mini_batch_size, seq_length, input_dim)`.
     Output shape:
-        N-D tensor with shape: `(batch_size, ..., units)`.
-        For instance, for a 2D input with shape `(batch_size, input_dim)`,
-        the output would have shape `(batch_size, units)`.
+        Two 3D tensos with shapes: `(realisation_batch_size, reaslisation_seq_length, units)`, `(mini_batch_size, seq_length, units)`, if return_sequences==True
+                                else `(realisation_batch_size,  units)`, `(mini_batch_size, units)`
     """
 
     def __init__(self,
@@ -746,7 +692,7 @@ class TSRNNDense(TSLayer):
         return input_shape[:-1].concatenate(self.units)
 
     def get_config(self):
-        # TODO this function is copied from keras Dense, and probably needs some further changes for TSDense...?
+        # TODO this function is copied from Keras.Layers.Dense, and probably needs some further changes for TSRNNDense...?
         config = {
                 'units': self.units,
                 'activation': activations.serialize(self.activation),
