@@ -123,7 +123,7 @@ class TSDense(TSLayer):
         # Convert the target matrix into an ordinary weight matrix, by solving 
         # the least squares problem of linearly-transforming
         # the target input-matrix into the target output matrix.
-        b=self.target_matrix
+        b=self.target_matrix # This is the target output matrix
         if isinstance(self.realisation_batch_size, list):
             target_input_matrix=tf.reshape(target_input_matrix,[-1,target_input_matrix.get_shape()[-1]])
             b=tf.reshape(b,[-1,b.get_shape()[-1]])

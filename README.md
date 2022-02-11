@@ -33,9 +33,9 @@ This main folder contains a (still under-development) set of keras layers to imp
 
 To see how to use these target-space layers, see the four example python scripts in this repository.
 
-However to understand these futher, a key concept is that once a Target Space "layer" (e.g. TSDense) is constructed,  its call method requires TWO input tensors, and also outputs TWO tensors (unlike Keras.Layers.Dense which only receives ONE input tensor and makes ONE output tensor).  
+However to understand these futher, a key concept is that once a Target Space "layer" (e.g. TSDense) is constructed,  its call method inputs and outputs TWO tensors (unlike Keras.Layers.Dense which only inputs and outputs only ONE tensor).  
 
-The first two of these two tensors inputted and ouputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the input matrix $ \overline{X} $ (described in the paper on page 9 and section 3.1).  This quantity needs propagating though the network, layer by layer: Hence the first ouput tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
+The first two of these two tensors inputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $ \overline{X} $ (described in the paper on page 9 and section 3.1).  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first ouput tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
 
 ```
 class TSModel(keras.Model):
@@ -72,7 +72,7 @@ The key step of the target space method requires a least-squares problem solving
         # Convert the target matrix into an ordinary weight matrix, by solving 
         # the least squares problem of linearly-transforming
         # the target input-matrix into the target output matrix.
-        b=self.target_matrix
+        b=self.target_matrix # This is the target output matrix
         if self.use_bias:
             # bias nodes need incorporating into the input matrix for the last-squares method to find the bias weights at the same time as the main weights.
             inputs_with_bias=tf.concat([tf.ones_like(target_input_matrix[:,0:1]),target_input_matrix],axis=1)
