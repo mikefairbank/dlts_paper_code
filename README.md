@@ -11,9 +11,6 @@ This main folder contains a (still under-development) set of keras layers to imp
 
 - For the actual code used in the experiments in the paper, please see the subfolder "TF1 version"
 
-### Issues
-
-- See repository "Issues".  Patches are welcome. (Need a Keras Expert)
 
 ## Running the code
 
@@ -34,11 +31,11 @@ This main folder contains a (still under-development) set of keras layers to imp
 
 ### Building Target Space Models using ts_layers.py
 
-To see how to use these target-space layers, see the 4 example python scripts in this repository.
+To see how to use these target-space layers, see the four example python scripts in this repository.
 
 However to understand these futher, a key concept is that once a Target Space "layer" (e.g. TSDense) is constructed,  its call method requires TWO input tensors, and also outputs TWO tensors (unlike Keras.Layers.Dense which only receives ONE input tensor and makes ONE output tensor).  
 
-The first two of these two tensors inputted and ouputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1).  This quantity needs propagating though the network, layer by layer: Hence the first ouput tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
+The first two of these two tensors inputted and ouputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the input matrix $ \overline{X} $ (described in the paper on page 9 and section 3.1).  This quantity needs propagating though the network, layer by layer: Hence the first ouput tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
 
 ```
 class TSModel(keras.Model):
@@ -69,6 +66,8 @@ The second input matrix, originates as "x=inputs" and also propagates through th
 The key step of the target space method requires a least-squares problem solving, using a pseudoinverse.  This appears in equations (6) and (7) of the paper.  This step is performed by the following lines of ts_layers.calculate_internal_weight_matrix:
 
 ```
+    from tensorflow.linalg import lstsq 
+
     def calculate_internal_weight_matrix(self, target_input_matrix):
         # Convert the target matrix into an ordinary weight matrix, by solving 
         # the least squares problem of linearly-transforming
@@ -100,3 +99,7 @@ When running the two spirals script, with the --graphical argument, we should se
 
 ![Two-Spirals image](spirals_image.png)
 
+
+## Issues
+
+- See repository "Issues".  Patches are welcome. (We need a Keras Expert!)
