@@ -7,9 +7,11 @@ Please cite the above paper if this code or future variants of it are used in fu
 
 ### Purpose
 
-This main folder contains a (still under-development) set of keras layers to implement the target-space method.
+This main folder contains a set of Keras layers to implement the target-space method.
 
-- For the actual code used in the experiments in the paper, please see the subfolder "TF1 version"
+- This code is still under development.
+
+- For a stable version of this code, please see the subfolder "TF1 version", which contains the actual code used in the experiments in the paper.
 
 
 ## Running the code
@@ -33,9 +35,9 @@ This main folder contains a (still under-development) set of keras layers to imp
 
 To see how to use these target-space layers, see the four example python scripts in this repository.
 
-However to understand these futher, a key concept is that once a Target Space "layer" (e.g. TSDense) is constructed,  its call method inputs and outputs TWO tensors (unlike Keras.Layers.Dense which only inputs and outputs only ONE tensor).  
+However to understand these further, a key concept is that once a Target Space "layer" (e.g. TSDense) is constructed,  its call method inputs and outputs TWO tensors (unlike Keras.Layers.Dense which only inputs and outputs only ONE tensor).  
 
-The first two of these two tensors inputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1).  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first ouput tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
+The first two of these two tensors inputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1).  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first output tensor from a layer TSDense needs passing as the first input tensor of the next layer.  Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
 
 ```
 class TSModel(keras.Model):
