@@ -60,12 +60,12 @@ The above code snippet allows you to mix TSLayers with ordinary Keras.Layers.  F
 
 In the above code self.fixed_targets_input_matrix plays the role of $\overline{X}$ from the paper, and then x_targets holds this quantity as it propagates through the layers of the network.  
 
-The second input matrix going into each TSLayer, originates as "x=inputs" and also propagates through the network.  This represents the shuffled minibatch of data passing through the network.  It is this output matrix from the neural network that we care about and which would go into our training loss function.  
+The second input matrix going into each TSLayer, originates as "x=inputs" and also propagates through the network.  This represents the shuffled minibatch of data passing through the network.  It is this output matrix from the neural network that we care about, and which would go into our training loss function.  
 
 
 ### Understanding ts_layers.py
 
-The key step of the target space method requires a least-squares problem solving, using a pseudoinverse.  This appears in equations (6) and (7) of the paper.  This step is performed by the following lines of ts_layers.calculate_internal_weight_matrix:
+The key step of the target space method, i.e. solving which weights matrix best achieves the desired "target" outputs for a given layer, requires the solution of a least-squares matrix equation.  This appears in equations (6) and (7) of the paper.  This step is performed by the following lines of ts_layers.calculate_internal_weight_matrix:
 
 ```
     from tensorflow.linalg import lstsq 
