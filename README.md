@@ -35,11 +35,11 @@ This main folder contains a set of Keras layers to implement the target-space me
 
 To see how to use these target-space layers, see the four example python scripts in this repository.
 
-However to understand these further, a key concept is that once a Target Space "layer" (e.g. TSDense) is constructed,  its call method inputs and outputs TWO tensors (unlike Keras.Layers.Dense which only inputs and outputs only ONE tensor).  
+However, to understand these further, a key concept is that once a Target Space "layer" (e.g. *TSDense*) is constructed,  its *call* method inputs and outputs TWO tensors (unlike *keras.Layers.Dense* which only inputs and outputs ONE tensor).  
 
-The first of these two tensors inputted by TSDense has the variable name target_input_matrix.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1), shown in red in the diagram below.  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first output tensor from a layer TSDense needs passing as the first input tensor of the next layer. 
+The first of these two tensors inputted to *TSDense* has the variable name *target_input_matrix*.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1), shown in red in the diagram below.  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first output tensor from a *TSDense* layer needs passing as the first input tensor of the next layer. 
 
-The second input matrix going into each TSLayer, originates as "x=inputs" and also propagates through the network (shown in blue in the diagram below).  This represents the shuffled minibatch of data passing through the network.  It is this output matrix from the neural network that we care about, and which would go into our training loss function.   
+The second input matrix going into each *TSLayer*, originates as "x=inputs" and also propagates through the network (shown in blue in the diagram below).  This represents the shuffled mini-batch of data passing through the network.  It is this output matrix from the neural network that we care about (shown in blue in the diagram below), and which would go into our training loss function.   
 
 ![TS-Model image](./tsmodel_3layers.png)
 
@@ -60,16 +60,26 @@ class TSModel(keras.Model):
         return x
 ```
 
-Note that in this example, we have to define a subclass from keras.Model, and override the model's "call" method (as above).  So we have to not only use TSLayers, but also use them in a bespoke Model.  (There is no Keras "Functional API" or "Sequential" method currently available for using these keras target-space layers.  It's a pretty unusual demand we are placing on Keras layers here, so it requires fully overriding Keras.Model to achieve what we want).
+In the above code, *self.fixed_targets_input_matrix* plays the role of $\overline{X}$ from the paper, and *x_targets* holds this quantity as it propagates through the layers of the network (i.e. following the chain of red arrows in the above diagram).  Likewise, *x* holds the quantities propagating through the chain of blue arrows in the diagram.
 
-The above code snippet allows you to mix TSLayers with ordinary Keras.Layers.  For example we might want a TSConv2D layer followed by an ordinary Flatten layer, or ordinary MaxPool layer; so the above "if isinstance" statement allows that to happen.  
+Note that in this example, we have had to define a subclass from *keras.Model*, and override the model's *call* method (as above).  So we have to not only use *TSLayer*s, but also use them in a bespoke Model.  (There is no Keras "Functional API" or "Sequential" method currently available for using these keras target-space layers.  It's a pretty unusual demand we are placing on Keras layers here, so it requires fully overriding *keras.Model* to achieve what we want).
 
-In the above code self.fixed_targets_input_matrix plays the role of $\overline{X}$ from the paper, and then x_targets holds this quantity as it propagates through the layers of the network (i.e. following the chain of red arrows in the above diagram).  
+The above code snippet allows you to mix *TSLayer*s with ordinary *keras.Layers*.  For example we might want a *TSConv2D* layer followed by an ordinary *Flatten* layer, or ordinary *MaxPool* layer; so the above "if isinstance" statement allows that to happen.  
+
+###What should you choose for the *fixed_targets_input_matrix*, $\overline{X}$?
+
+This question is discussed in detail in section 3.1 of the paper. 
+
+Most importantly, this matrix must be fixed, and it must be a representative sample of the kind of inputs that will be passing through the neural network.
+
+In the code examples in this repository, for the CNN datasets used (e.g. MNIST, CIFAR10, etc), we chose $\overline{X}$ to be the first 100 training images of the datasets.  For the two-spirals example, we used the entire training set (since the training set in that example only has a small number of instances).  For the IMDB RNN example, we used a random (fixed) noise matrix.  
+
+In Fig 7 of the paper, we show that if the number of input vectors in $\overline{X}$ is too small, then performance can degrade.  However, on the other hand, you might *want* fewer input vectors in $\overline{X}$, as this will have a property of forcing your neural network's weight matrices to all become fairly low rank (which might have desirable properties for generalisation).
 
 
-### Understanding ts_layers.py
+### Understanding *ts_layers.py*
 
-The key step of the target space method, i.e. solving which weights matrix best achieves the desired "target" outputs for a given layer, requires the solution of a least-squares matrix equation.  This appears in equations (6) and (7) of the paper.  This step is performed by the following lines of ts_layers.calculate_internal_weight_matrix:
+The key step of the target space method, i.e. solving which weights matrix best achieves the desired "target" outputs for a given layer, requires the solution of a least-squares matrix equation.  This appears in equations (6) and (7) of the paper.  This step is performed by the following (simplification of the) code from the various *ts_layers.calculate_internal_weight_matrix* methods:
 
 ```
     from tensorflow.linalg import lstsq 
@@ -86,6 +96,8 @@ The key step of the target space method, i.e. solving which weights matrix best 
             inputs_with_bias=target_input_matrix  
         return lstsq(inputs_with_bias, b, l2_regularizer=self.pseudoinverse_l2_regularisation)
 ```
+
+This makes use of the very useful tensorflow [tf.linalg.lstsq](https://www.tensorflow.org/api_docs/python/tf/linalg/lstsq) function, which is doing a lot of work for us.
 
 ## Dependencies
 
