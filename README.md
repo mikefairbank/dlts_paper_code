@@ -41,7 +41,7 @@ The first of these two tensors inputted by TSDense has the variable name target_
 
 The second input matrix going into each TSLayer, originates as "x=inputs" and also propagates through the network (shown in blue in the diagram below).  This represents the shuffled minibatch of data passing through the network.  It is this output matrix from the neural network that we care about, and which would go into our training loss function.   
 
-![TS-Model image](./tsmodel_3layers.svg)
+![TS-Model image](./tsmodel_3layers.png)
 
 Example code of how to do this is in [twoSpirals_target_space.py](./twoSpirals_target_space.py):
 
