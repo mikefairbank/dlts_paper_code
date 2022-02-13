@@ -37,9 +37,9 @@ To see how to use these target-space layers, see the four example python scripts
 
 However, to understand these further, a key concept is that once a Target Space "layer" (e.g. *TSDense*) is constructed,  its *call* method inputs and outputs TWO tensors (unlike *keras.Layers.Dense* which only inputs and outputs ONE tensor).  
 
-The first of these two tensors inputted to *TSDense* has the variable name *target_input_matrix*.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1), shown in red in the diagram below.  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first output tensor from a *TSDense* layer needs passing as the first input tensor of the next layer. 
+The first of these two tensors inputted to *TSDense* has the variable name *target_input_matrix*.  This corresponds to the data being propagated through the network corresponding to the fixed input matrix $\overline{X}$ (described in the paper on page 9 and section 3.1), shown in red in the diagram below.  This quantity is used to convert the layer targets into ordinary weight matrices, and it needs propagating though the network, layer by layer: Hence the first output tensor from each *TSDense* layer needs passing as the first input tensor of the next layer. 
 
-The second input matrix going into each *TSLayer*, originates as "x=inputs" and also propagates through the network (shown in blue in the diagram below).  This represents the shuffled mini-batch of data passing through the network.  It is this output matrix from the neural network that we care about (shown in blue in the diagram below), and which would go into our training loss function.   
+The second input matrix going into each *TSLayer* represents the shuffled mini-batch of data passing through the network, and also propagates through the network (shown in blue in the diagram below).  It is this output matrix from the neural network that we care about, and which would go into our training loss function.   
 
 ![TS-Model image](./tsmodel_3layers.png)
 
@@ -66,11 +66,11 @@ Note that in this example, we have had to define a subclass from *keras.Model*, 
 
 The above code snippet allows you to mix *TSLayer*s with ordinary *keras.Layers*.  For example we might want a *TSConv2D* layer followed by an ordinary *Flatten* layer, or ordinary *MaxPool* layer; so the above "if isinstance" statement allows that to happen.  
 
-###What should you choose for the *fixed_targets_input_matrix*, $\overline{X}$?
+### What should you choose for the *fixed_targets_input_matrix*, $\overline{X}$?
 
 This question is discussed in detail in section 3.1 of the paper. 
 
-Most importantly, this matrix must be fixed, and it must be a representative sample of the kind of inputs that will be passing through the neural network.
+Most importantly though, this matrix must be fixed, and it must be a representative sample of the kind of inputs that will be passing through the neural network.
 
 In the code examples in this repository, for the CNN datasets used (e.g. MNIST, CIFAR10, etc), we chose $\overline{X}$ to be the first 100 training images of the datasets.  For the two-spirals example, we used the entire training set (since the training set in that example only has a small number of instances).  For the IMDB RNN example, we used a random (fixed) noise matrix.  
 
