@@ -115,8 +115,12 @@ class TSDense(TSLayer):
         self.activation = activations.get(activation)
         self.use_bias = use_bias
         self.supports_masking = True
-        self.input_spec = InputSpec(min_ndim=2)
-        #self.input_spec = (InputSpec(shape=(realisation_batch_size,None)),InputSpec(min_ndim=2)) #TODO I suspect we should be using InputSpec properly to validate the inputs to each layer.  There are two inputs to each layer required!
+        if isinstance(self.realisation_batch_size, list):
+            # Note, the realisation_batch_size could be a list if this layer is following after a TSRNNDense layer, e.g. see imdb example code
+            assert len(self.realisation_batch_size)==2 # Nothing else is supported currently
+            self.input_spec = (InputSpec(min_ndim=1+len(self.realisation_batch_size), axes={0: self.realisation_batch_size[0], 1: self.realisation_batch_size[1]}), InputSpec(min_ndim=1+len(self.realisation_batch_size))) 
+        else:
+            self.input_spec = (InputSpec(min_ndim=2, axes={0: self.realisation_batch_size}),InputSpec(min_ndim=2)) #Enforces that two input tensors are always passed to the call method
         self.use_scu_algorithm=use_scu_algorithm
                 
     def calculate_internal_weight_matrix(self,target_input_matrix):
@@ -125,6 +129,8 @@ class TSDense(TSLayer):
         # the target input-matrix into the target output matrix.
         b=self.target_matrix # This is the target output matrix
         if isinstance(self.realisation_batch_size, list):
+            # Note, the realisation_batch_size could be a list if this layer is following after a TSRNNDense layer, e.g. see imdb example code
+            # In this case, just treat the second axis as an extension of the batch dimension, so can just merge them with a reshape...
             target_input_matrix=tf.reshape(target_input_matrix,[-1,target_input_matrix.get_shape()[-1]])
             b=tf.reshape(b,[-1,b.get_shape()[-1]])
         if self.use_bias:
@@ -134,17 +140,22 @@ class TSDense(TSLayer):
             inputs_with_bias=target_input_matrix  
         return lstsq(inputs_with_bias, b, l2_regularizer=self.pseudoinverse_l2_regularisation)
 
-    def build(self, input_shape):
+    def build(self, two_input_shapes): # expects TWO input shapes to be passed in
+        [input_shape_targets,input_shape_main]=two_input_shapes 
         dtype = dtypes.as_dtype(self.dtype or K.floatx())
         if not (dtype.is_floating or dtype.is_complex):
             raise TypeError('Unable to build `Dense` layer with non-floating point '
                                             'dtype %s' % (dtype,))
-        input_shape = tensor_shape.TensorShape(input_shape)
-        if tensor_shape.dimension_value(input_shape[-1]) is None:
+        input_shape_main = tensor_shape.TensorShape(input_shape_main)
+        if tensor_shape.dimension_value(input_shape_main[-1]) is None:
             raise ValueError('The last dimension of the inputs to `Dense` '
                                              'should be defined. Found `None`.')
-        last_dim = tensor_shape.dimension_value(input_shape[-1])
-        self.input_spec = InputSpec(min_ndim=2, axes={-1: last_dim})
+        last_dim = tensor_shape.dimension_value(input_shape_main[-1])
+        if isinstance(self.realisation_batch_size, list):
+            # Note, the realisation_batch_size could be a list if this layer is following after a TSRNNDense layer, e.g. see imdb example code
+            self.input_spec = (InputSpec(min_ndim=1+len(self.realisation_batch_size), axes={0: self.realisation_batch_size[0], 1: self.realisation_batch_size[1], -1: last_dim}), InputSpec(min_ndim=1+len(self.realisation_batch_size), axes={-1: last_dim}))
+        else:
+            self.input_spec = (InputSpec(min_ndim=2, axes={0: self.realisation_batch_size, -1: last_dim}), InputSpec(min_ndim=2, axes={-1: last_dim}))
         self.bias = None
         self.built = True
         
@@ -161,7 +172,8 @@ class TSDense(TSLayer):
         return output
     
 
-    def call(self, target_input_matrix, inputs0):
+    def call(self, double_input_matrix):
+        [target_input_matrix, inputs0]=double_input_matrix
         #tf.print("input_spec.assert_input_compatibility",self.input_spec)
         #input_spec.assert_input_compatibility(self.input_spec, [target_input_matrix, inputs0], self.name)
         internal_weight_matrix=self.calculate_internal_weight_matrix(target_input_matrix)
@@ -181,7 +193,7 @@ class TSDense(TSLayer):
     
     def propagate_layer(self, inputs, internal_weight_matrix, apply_activation=True):
         if isinstance(self.realisation_batch_size, list): 
-            rank=len(self.realisation_batch_size)+1
+            rank=len(self.realisation_batch_size)+1 
         else:
             rank=2
         if self.use_bias:
@@ -316,31 +328,33 @@ class TSConv2D(TSLayer):
         self.bias_regularizer = regularizers.get(bias_regularizer)
         self.kernel_constraint = constraints.get(kernel_constraint)
         self.bias_constraint = constraints.get(bias_constraint)
-        self.input_spec = InputSpec(ndim=self.rank + 2)
+        self.input_spec = (InputSpec(ndim=self.rank + 2),InputSpec(ndim=self.rank + 2))
         self._padding_op = self._get_padding_op()
         
-    def build(self, input_shape):
-        input_shape = tensor_shape.TensorShape(input_shape)
-        input_channel = self._get_input_channel(input_shape)
+    def build(self, two_input_shapes):
+        [input_shape_targets,input_shape_main]=two_input_shapes
+        input_shape_main = tensor_shape.TensorShape(input_shape_main)
+        input_channel = self._get_input_channel(input_shape_main)
         kernel_shape = self.kernel_size + (input_channel, self.filters)
         channel_axis = self._get_channel_axis()
-        self.input_spec = InputSpec(ndim=self.rank + 2,
-                        axes={channel_axis: input_channel})
-        self._build_conv_op_input_shape = input_shape
+        self.input_spec = (InputSpec(ndim=self.rank + 2,
+                        axes={channel_axis: input_channel}),InputSpec(ndim=self.rank + 2,
+                        axes={channel_axis: input_channel}))
+        self._build_conv_op_input_shape = input_shape_main
         self._build_input_channel = input_channel
         self._padding_op = self._get_padding_op()
         self._conv_op_data_format = conv_utils.convert_data_format(
                 self.data_format, self.rank + 2)
         self._convolution_op = nn_ops.Convolution(
-                input_shape,
+                input_shape_main,
                 filter_shape=tensor_shape.TensorShape(kernel_shape),
                 dilation_rate=self.dilation_rate,
                 strides=self.strides,
                 padding=self._padding_op,
                 data_format=self._conv_op_data_format)
-        self.image_height=input_shape[1] #.value
-        self.image_width=input_shape[2] #.value
-        self.input_channels=input_shape[3]
+        self.image_height=input_shape_main[1] 
+        self.image_width=input_shape_main[2] 
+        self.input_channels=input_shape_main[3]
         num_patches=self.image_width*self.image_height
         self.num_patches=num_patches
         self.target_matrix = self.add_weight(
@@ -353,7 +367,8 @@ class TSConv2D(TSLayer):
                 trainable=True)    
         self.built = True
 
-    def call(self, target_inputs, inputs, training=False):
+    def call(self, double_input_matrix, training=False):
+        [target_inputs, inputs]=double_input_matrix
         if self._recreate_conv_op(inputs):
             self._convolution_op = nn_ops.Convolution(
                     inputs.get_shape(),
@@ -609,7 +624,7 @@ class TSRNNDense(TSLayer):
         self.activation = activations.get(activation)
         self.use_bias = use_bias
         self.supports_masking = True
-        self.input_spec = InputSpec(min_ndim=2)
+        self.input_spec = (InputSpec(min_ndim=3,axes={0:realisation_batch_size, 1:realisation_seq_length}),InputSpec(min_ndim=3))
                 
     def calculate_internal_weight_matrix(self,target_input_matrix):
         # Convert the target matrix into an ordinary weight matrix, by solving 
@@ -647,17 +662,19 @@ class TSRNNDense(TSLayer):
         else:
             return result_list[-1]
 
-    def build(self, input_shape):
+    def build(self, two_input_shapes):
+        [input_shape_targets, input_shape_main]=two_input_shapes
         dtype = dtypes.as_dtype(self.dtype or K.floatx())
         if not (dtype.is_floating or dtype.is_complex):
             raise TypeError('Unable to build `Dense` layer with non-floating point '
                                             'dtype %s' % (dtype,))
-        input_shape = tensor_shape.TensorShape(input_shape)
+        input_shape = tensor_shape.TensorShape(input_shape_main)
         if tensor_shape.dimension_value(input_shape[-1]) is None:
             raise ValueError('The last dimension of the inputs to `Dense` '
                                              'should be defined. Found `None`.')
         last_dim = tensor_shape.dimension_value(input_shape[-1])
-        self.input_spec = InputSpec(min_ndim=2, axes={-1: last_dim})
+        time_seq_length = tensor_shape.dimension_value(input_shape[-2])
+        self.input_spec = (InputSpec(min_ndim=3, axes={0:self.realisation_batch_size, 1:self.realisation_seq_length, -1: last_dim}), InputSpec(min_ndim=3, axes={1:time_seq_length, -1: last_dim}))
         self.bias = None
         self.built = True
         
@@ -676,7 +693,8 @@ class TSRNNDense(TSLayer):
         return output
     
 
-    def call(self, target_input_matrix,inputs):
+    def call(self, double_input_matrix):
+        [target_input_matrix,inputs]=double_input_matrix
         full_kernel=self.calculate_internal_weight_matrix(target_input_matrix)
         output_matrix=self.propagate_layer(inputs, full_kernel, self.seq_length, self.return_sequences)
         target_output_matrix=self.propagate_layer(target_input_matrix, full_kernel, self.realisation_seq_length, self.return_sequences)

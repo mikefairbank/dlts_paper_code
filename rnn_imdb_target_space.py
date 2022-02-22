@@ -118,7 +118,7 @@ mean=0.0, stddev=0.1)))
                 if isinstance(l, layers.Embedding):
                     x=l(x)
                 elif isinstance(l, ts.TSLayer):
-                    x_targets,x=l(x_targets,x)
+                    x_targets,x=l([x_targets,x])
                 else:
                     x_targets,x=l(x_targets),l(x)
             return x
