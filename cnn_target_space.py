@@ -159,7 +159,7 @@ else:
     inputs = keras.Input(shape=(input_image_side_length,input_image_side_length,input_image_channels,), name='input')
     #x = layers.Conv2D(32, kernel_size=3, activation='relu', padding="same")(inputs)
     x = layers.Conv2D(filters=32, kernel_size=3, activation=af, padding="same")(inputs)
-    x = layers.Conv2D(filters=32, kernel_size=3, activation=af, padding="same")(inputs)
+    x = layers.Conv2D(filters=32, kernel_size=3, activation=af, padding="same")(x)
     x = layers.MaxPool2D(pool_size=(2, 2), strides=(2, 2), padding='valid')(x)
     if args.dropout:
         x=layers.Dropout(0.2)(x)
