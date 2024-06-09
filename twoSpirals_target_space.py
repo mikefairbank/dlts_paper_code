@@ -125,7 +125,7 @@ class CallbackUpdateGraphics(keras.callbacks.Callback):
     def on_batch_end(self, batch, logs):
         self.count+=1
         if self.count%40==0:
-            y_greyscale=tf.nn.softmax(keras_model(image_input_matrix),axis=1)[:,0].numpy()
+            y_greyscale=tf.nn.softmax(keras_model(image_input_matrix),axis=1)[:,0].numpy().T
             y_greyscale=y_greyscale.reshape(graphics_resolution+1,graphics_resolution+1)
             myobj.set_data(y_greyscale)
             plt.show()
@@ -156,6 +156,6 @@ print("Training time:",end_time-start_time)
 if graphical:
     if args.screenshot:
         import datetime
-        plt.savefig("trained_net_"+("t" if use_target_space else "w"+"_"+str(datetime.datetime.now())+".png"),bbox_inches="tight")
+        plt.savefig("trained_net_"+("t" if use_target_space else "w")+"_"+str(datetime.datetime.now())+".png",bbox_inches="tight")
     else:
         input("Press [enter] to continue.")
