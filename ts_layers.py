@@ -4,38 +4,22 @@
 # TODO fix the get_config functions for each class.
 # TODO: Try and get InputSpec set up correctly so that it validates 2 input tensors are used.
 
-
 import numpy as np
 import tensorflow as tf
-
-from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow import keras
+from tensorflow.keras import Layer
 from tensorflow.keras import layers
-from tensorflow.python.keras import activations
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras import constraints
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras.engine.base_layer import Layer
-from tensorflow.python.keras.engine.input_spec import InputSpec
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
+from tensorflow.keras import regularizers
+from tensorflow.keras import activations
+from tensorflow.keras import constraints
+from tensorflow.keras import initializers
+from tensorflow.python.keras.engine.input_spec import InputSpec     
+from tensorflow.python.framework import dtypes   
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python.eager import context
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.keras import activations
-from tensorflow.python.keras import backend
-from tensorflow.python.keras.utils import conv_utils
-from tensorflow.python.keras.utils import tf_utils
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import nn
+from tensorflow.linalg import lstsq
 from tensorflow.python.ops import nn_ops
-from tensorflow.python.util.tf_export import keras_export
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import constant_op
-from tensorflow.linalg import lstsq 
-#from keras.engine import input_spec
+from tensorflow.python.keras.utils import conv_utils
+from tensorflow.python.ops import nn
 
 class TSLayer(Layer):
     def __init__(self,
@@ -105,7 +89,7 @@ class TSDense(TSLayer):
         self.kernel_regularizer = regularizers.get(kernel_regularizer)
         self.kernel_constraint = constraints.get(kernel_constraint)
         self.target_matrix = self.add_weight(
-                'target_matrix',
+                name='target_matrix',
                 shape=(realisation_batch_size+[self.units]) if isinstance(realisation_batch_size, list) else [realisation_batch_size, self.units],
                 initializer=self.kernel_initializer,
                 regularizer=self.kernel_regularizer,
@@ -131,8 +115,8 @@ class TSDense(TSLayer):
         if isinstance(self.realisation_batch_size, list):
             # Note, the realisation_batch_size could be a list if this layer is following after a TSRNNDense layer, e.g. see imdb example code
             # In this case, just treat the second axis as an extension of the batch dimension, so can just merge them with a reshape...
-            target_input_matrix=tf.reshape(target_input_matrix,[-1,target_input_matrix.get_shape()[-1]])
-            b=tf.reshape(b,[-1,b.get_shape()[-1]])
+            target_input_matrix=tf.reshape(target_input_matrix,[-1,target_input_matrix.shape[-1]])
+            b=tf.reshape(b,[-1,b.shape[-1]])
         if self.use_bias:
             # bias nodes need incorporating into the input matrix for the last-squares method to find the bias weights at the same time as the main weights.
             inputs_with_bias=tf.concat([tf.ones_like(target_input_matrix[:,0:1]),target_input_matrix],axis=1)
@@ -205,11 +189,7 @@ class TSDense(TSLayer):
             inputs_with_bias=inputs
         if rank>2:
             internal_weight_matrix=tf.reshape(internal_weight_matrix,[1,internal_weight_matrix.get_shape()[0],internal_weight_matrix.get_shape()[1]])
-        inputs_with_bias = tf.cast(inputs_with_bias, self._compute_dtype)
-        if K.is_sparse(inputs):
-            outputs = sparse_ops.sparse_tensor_dense_matmul(inputs_with_bias, internal_weight_matrix)
-        else:
-            outputs = tf.matmul(inputs_with_bias, internal_weight_matrix)
+        outputs = tf.matmul(inputs_with_bias, internal_weight_matrix)
         if self.activation is not None and apply_activation:
             outputs=self.activation(outputs)
         return outputs    
@@ -358,7 +338,7 @@ class TSConv2D(TSLayer):
         num_patches=self.image_width*self.image_height
         self.num_patches=num_patches
         self.target_matrix = self.add_weight(
-                'target_matrix',
+                name='target_matrix',
                 shape=[self.realisation_batch_size*num_patches, self.filters],
                 initializer=self.kernel_initializer,
                 regularizer=self.kernel_regularizer,
@@ -614,7 +594,7 @@ class TSRNNDense(TSLayer):
         self.kernel_regularizer = regularizers.get(kernel_regularizer)
         self.kernel_constraint = constraints.get(kernel_constraint)
         self.target_matrix = self.add_weight(
-                'target_matrix',
+                name='target_matrix',
                 shape=[realisation_batch_size, realisation_seq_length, self.units],
                 initializer=self.kernel_initializer,
                 regularizer=self.kernel_regularizer,
@@ -641,8 +621,8 @@ class TSRNNDense(TSLayer):
         if self.use_bias:
             # bias nodes need incorporating into the input matrix for the last-squares method to find the bias weights at the same time as the main weights.
             estimated_full_input_matrix=tf.concat([tf.ones_like(estimated_full_input_matrix[:,:,0:1]),estimated_full_input_matrix],axis=2)
-        A=tf.reshape(estimated_full_input_matrix,[-1,estimated_full_input_matrix.get_shape()[2]])
-        b=tf.reshape(self.target_matrix,[-1,self.target_matrix.get_shape()[2]])
+        A=tf.reshape(estimated_full_input_matrix,[-1,estimated_full_input_matrix.shape[2]])
+        b=tf.reshape(self.target_matrix,[-1,self.target_matrix.shape[2]])
         full_kernel=lstsq(A, b, l2_regularizer=self.pseudoinverse_l2_regularisation)
         return full_kernel
 

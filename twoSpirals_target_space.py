@@ -126,7 +126,7 @@ class CallbackUpdateGraphics(keras.callbacks.Callback):
         self.count+=1
         if self.count%40==0:
             y_greyscale=tf.nn.softmax(keras_model(image_input_matrix),axis=1)[:,0].numpy()
-            y_greyscale=y_greyscale.reshape(graphics_resolution+1,graphics_resolution+1).T
+            y_greyscale=y_greyscale.reshape(graphics_resolution+1,graphics_resolution+1)
             myobj.set_data(y_greyscale)
             plt.show()
             plt.pause(0.001)
